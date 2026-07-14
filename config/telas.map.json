@@ -1,0 +1,14 @@
+{
+  "tv_saguao": {
+    "label": "TV do Saguão",
+    "aliases": ["tv do saguao", "tv do saguão", "saguao", "saguão", "saguão principal", "recepcao", "recepção"]
+  },
+  "tv_sala": {
+    "label": "TV da Sala",
+    "aliases": ["tv da sala", "tv sala", "sala", "sala de aula"]
+  },
+  "tv_diretoria": {
+    "label": "TV da Diretoria",
+    "aliases": ["tv da diretoria", "diretoria", "secretaria"]
+  }
+}

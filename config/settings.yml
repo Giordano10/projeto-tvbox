@@ -1,0 +1,9 @@
+porta: 8080
+modo: local
+polling_segundos: 5
+flask_secret_key: desenvolvimento-tvb
+picoclaw:
+  habilitado: true
+  bin: /home/admin/picoclaw_agent
+  modelo: gemini-flash
+  mensageiro: telegram

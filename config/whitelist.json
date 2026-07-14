@@ -1,0 +1,22 @@
+{
+  "painel_local": [
+    {
+      "user": "diretor",
+      "hash_senha": "plain:trocar123",
+      "role": "gestor",
+      "ativo": true
+    }
+  ],
+  "mensageiro": [
+    {
+      "canal": "telegram",
+      "user_id": "123456789",
+      "telegram_username": "diretora_ana",
+      "nome": "Diretora Ana",
+      "role": "gestor",
+      "ativo": true,
+      "autorizado_em": "2026-07-13T00:00:00Z",
+      "autorizado_por": "sistema"
+    }
+  ]
+}
