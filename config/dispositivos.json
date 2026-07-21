@@ -2,7 +2,7 @@
   "tv_saguao": {
     "screen_id": "tv_saguao",
     "label": "TV do Saguão",
-    "ip": "127.0.0.1",
+    "ip": "192.168.15.5",
     "ativo": true,
     "device_token": "token-teste",
     "aliases": ["tv do saguao", "saguao"]
@@ -10,7 +10,7 @@
   "tv_sala": {
     "screen_id": "tv_sala",
     "label": "TV da Sala",
-    "ip": "127.0.0.1",
+    "ip": "192.168.15.6",
     "ativo": true,
     "device_token": "token-teste",
     "aliases": ["tv da sala", "sala"]
@@ -18,7 +18,7 @@
   "tv_diretoria": {
     "screen_id": "tv_diretoria",
     "label": "TV da Diretoria",
-    "ip": "127.0.0.1",
+    "ip": "192.168.15.7",
     "ativo": true,
     "device_token": "token-teste",
     "aliases": ["tv da diretoria", "diretoria"]
