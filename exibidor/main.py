@@ -8,7 +8,7 @@ from .player import ExibidorPlayer
 
 
 def main() -> int:
-    base_dir = Path(__file__).resolve().parents[1]
+    base_dir = Path(__file__).resolve().parents[0]
     config_file = base_dir / "config" / "exibidor.conf"
     if not config_file.exists():
         print(f"configuracao nao encontrada: {config_file}")
