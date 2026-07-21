@@ -183,6 +183,60 @@ PANEL_HTML = """<!doctype html>
 </html>"""
 
 
+VIEWER_HTML = """<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Virtual TV - {{ screen_id }}</title>
+  <style>
+    body, html { margin:0; padding:0; width:100%; height:100%; background:#050814; display:flex; justify-content:center; align-items:center; overflow:hidden; font-family:sans-serif; color:#fff; }
+    img { max-width:100%; max-height:100%; object-fit:contain; display:none; border-radius:8px; box-shadow:0 20px 80px rgba(0,0,0,0.8); }
+    .placeholder { font-size:24px; text-transform:uppercase; letter-spacing:2px; color:#5e6e8c; text-align:center; padding:20px; }
+  </style>
+</head>
+<body>
+  <div id="placeholder" class="placeholder">Carregando Tela Virtual...</div>
+  <img id="display" src="" alt="Sinalização Digital">
+
+  <script>
+    const screenId = "{{ screen_id }}";
+    const img = document.getElementById('display');
+    const placeholder = document.getElementById('placeholder');
+    let currentSrc = null;
+
+    async function updateScreen() {
+      try {
+        const response = await fetch(`/api/tela/${screenId}`);
+        const data = await response.json();
+        const estado = data.estado || {};
+        if (estado.tipo === 'vazio' || !estado.src) {
+          img.style.display = 'none';
+          placeholder.style.display = 'block';
+          placeholder.textContent = "Tela do Saguão: Aguardando nova publicação...";
+          currentSrc = null;
+        } else {
+          const srcUrl = `/conteudo/${estado.src}`;
+          if (currentSrc !== srcUrl) {
+            img.src = srcUrl;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            currentSrc = srcUrl;
+          }
+        }
+      } catch (e) {
+        placeholder.style.display = 'block';
+        placeholder.textContent = "Erro de conexão com o Gestor";
+      }
+    }
+
+    setInterval(updateScreen, 2000);
+    updateScreen();
+  </script>
+</body>
+</html>"""
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = str(service.settings.get("flask_secret_key", "desenvolvimento-tvb"))
@@ -211,6 +265,12 @@ def create_app() -> Flask:
     @app.get("/painel")
     def painel():
         return render_template_string(PANEL_HTML)
+
+    @app.get("/visualizar/<screen_id>")
+    def visualizar(screen_id: str):
+        if screen_id not in service.available_screens():
+            abort(404)
+        return render_template_string(VIEWER_HTML, screen_id=screen_id)
 
     @app.post("/api/login")
     def login():
