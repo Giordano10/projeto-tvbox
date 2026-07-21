@@ -24,7 +24,7 @@ class HeartbeatResult:
 
 
 def build_screen_state_url(base_url: str, screen_id: str) -> str:
-    return f"{base_url.rstrip('/')}/api/tela/{quote(screen_id)}/"
+    return f"{base_url.rstrip('/')}/api/tela/{quote(screen_id)}"
 
 
 def build_content_url(base_url: str, relative_src: str) -> str:
