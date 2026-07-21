@@ -1,12 +1,12 @@
 {
   "tv_saguao": {
-    "screen_id": "tv_saguao",
-    "label": "TV do Saguão",
-    "ip": "127.0.0.1",
-    "ativo": true,
-    "device_token": "token-teste",
-    "aliases": ["tv do saguao", "saguao"]
-  },
+  "screen_id": "tv_saguao",
+  "label": "TV do Saguão",
+  "ip": "127.0.0.1",
+  "ativo": true,
+  "device_token": "token-teste",
+  "aliases": ["tv do saguao", "saguao"]
+ },
   "tv_sala": {
     "screen_id": "tv_sala",
     "label": "TV da Sala",
