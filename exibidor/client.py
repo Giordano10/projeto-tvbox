@@ -73,11 +73,11 @@ def send_heartbeat(base_url: str, payload: dict[str, str], timeout_seconds: int 
                 reason=str(body.get("reason", ""))
             )
     except HTTPError as e:
-        return HeartbeatResult(status="erro", reason=f"Erro HTTP {e.code}")
-    except URLError as e:
-        return HeartbeatResult(status="erro", reason=f"Falha de rede: {e.reason}")
-    except Exception as e:
-        return HeartbeatResult(status="erro", reason=f"Erro interno: {e}")
+        try:
+            body = json.loads(e.read().decode("utf-8"))
+            return HeartbeatResult(status="erro", reason=str(body.get("reason", f"Erro HTTP {e.code}")))
+        except Exception:
+            return HeartbeatResult(status="erro", reason=f"Erro HTTP {e.code}")
 
 
 def is_reachable(base_url: str, timeout_seconds: int = 3) -> bool:
