@@ -24,7 +24,7 @@ class HeartbeatResult:
 
 
 def build_screen_state_url(base_url: str, screen_id: str) -> str:
-    return f"{base_url.rstrip('/')}/api/tela/{quote(screen_id)}"
+    return f"{base_url.rstrip('/')}/api/tela/{quote(screen_id)}/"
 
 
 def build_content_url(base_url: str, relative_src: str) -> str:
@@ -64,9 +64,20 @@ def send_heartbeat(base_url: str, payload: dict[str, str], timeout_seconds: int 
         headers={"Accept": "application/json", "Content-Type": "application/json"},
         method="POST",
     )
-    with urlopen(request, timeout=timeout_seconds) as response:
-        body = json.loads(response.read().decode("utf-8"))
-    return HeartbeatResult(status=str(body.get("status", "erro")), reason=str(body.get("reason", "")))
+    
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:
+            body = json.loads(response.read().decode("utf-8"))
+            return HeartbeatResult(
+                status=str(body.get("status", "erro")), 
+                reason=str(body.get("reason", ""))
+            )
+    except HTTPError as e:
+        return HeartbeatResult(status="erro", reason=f"Erro HTTP {e.code}")
+    except URLError as e:
+        return HeartbeatResult(status="erro", reason=f"Falha de rede: {e.reason}")
+    except Exception as e:
+        return HeartbeatResult(status="erro", reason=f"Erro interno: {e}")
 
 
 def is_reachable(base_url: str, timeout_seconds: int = 3) -> bool:
