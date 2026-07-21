@@ -1,0 +1,15 @@
+[Unit]
+Description=Sinalizacao Digital - Servidor Gestor
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/projeto-tvbox
+ExecStart=/home/admin/projeto-tvbox/.venv/bin/python -m sinalizacao.server.app
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

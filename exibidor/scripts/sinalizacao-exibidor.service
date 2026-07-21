@@ -1,0 +1,15 @@
+[Unit]
+Description=Sinalizacao Digital - Player Exibidor
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/projeto-tvbox
+ExecStart=/home/admin/projeto-tvbox/.venv/bin/python -m exibidor.main
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
