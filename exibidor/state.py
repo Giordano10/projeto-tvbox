@@ -41,9 +41,9 @@ class ExibidorState:
             last_error=str(payload.get("last_error", "")),
         )
 
-    def mark_download(self, src: str, downloaded_file: str) -> None:
+    def mark_download(self, src: str, tipo: str, downloaded_file: str) -> None:
         self.last_seen_src = src
-        self.last_seen_tipo = "imagem"
+        self.last_seen_tipo = tipo
         self.last_downloaded_file = downloaded_file
         self.last_updated_at = _utc_now()
         self.last_error = ""

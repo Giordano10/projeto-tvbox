@@ -37,7 +37,7 @@ class SignalizacaoServiceTests(unittest.TestCase):
                 (root / relative).mkdir(parents=True, exist_ok=True)
 
             (root / "config/settings.yml").write_text(
-                "porta: 8080\nmodo: local\npolling_segundos: 5\nflask_secret_key: teste\npicoclaw:\n  habilitado: true\n  bin: /home/admin/picoclaw_agent\n  modelo: gemini-flash\n  mensageiro: telegram\n",
+                "porta: 8080\nmodo: local\npolling_segundos: 5\nflask_secret_key: teste\npicoclaw:\n  habilitado: true\n  bin: /home/admin/picoclaw_agent\n  modelo: antigravity\n  mensageiro: telegram\n",
                 encoding="utf-8",
             )
             (root / "config/whitelist.json").write_text(
@@ -65,7 +65,7 @@ class SignalizacaoServiceTests(unittest.TestCase):
                 (root / relative).mkdir(parents=True, exist_ok=True)
 
             (root / "config/settings.yml").write_text(
-                "porta: 8080\nmodo: local\npolling_segundos: 5\nflask_secret_key: teste\npicoclaw:\n  habilitado: true\n  bin: /home/admin/picoclaw_agent\n  modelo: gemini-flash\n  mensageiro: telegram\n",
+                "porta: 8080\nmodo: local\npolling_segundos: 5\nflask_secret_key: teste\npicoclaw:\n  habilitado: true\n  bin: /home/admin/picoclaw_agent\n  modelo: antigravity\n  mensageiro: telegram\n",
                 encoding="utf-8",
             )
             (root / "config/whitelist.json").write_text(
@@ -102,7 +102,7 @@ class SignalizacaoServiceTests(unittest.TestCase):
                 (root / relative).mkdir(parents=True, exist_ok=True)
 
             (root / "config/settings.yml").write_text(
-                "porta: 8080\nmodo: local\npolling_segundos: 5\nheartbeat_ttl_segundos: 1\nflask_secret_key: teste\npicoclaw:\n  habilitado: true\n  bin: /home/admin/picoclaw_agent\n  modelo: gemini-flash\n  mensageiro: telegram\n",
+                "porta: 8080\nmodo: local\npolling_segundos: 5\nheartbeat_ttl_segundos: 1\nflask_secret_key: teste\npicoclaw:\n  habilitado: true\n  bin: /home/admin/picoclaw_agent\n  modelo: antigravity\n  mensageiro: telegram\n",
                 encoding="utf-8",
             )
             (root / "config/whitelist.json").write_text(

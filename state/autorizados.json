@@ -8,6 +8,24 @@
       "role": "gestor",
       "telegram_username": "diretora_ana",
       "user_id": "123456789"
+    },
+    {
+      "autorizado_em": "2026-07-22T16:34:21.737025+00:00",
+      "autorizado_por": "diretor",
+      "canal": "painel_local",
+      "nome": "operador_sala",
+      "role": "operador",
+      "telegram_username": "operador_sala",
+      "user_id": ""
+    },
+    {
+      "autorizado_em": "2026-07-22T16:36:41.714603+00:00",
+      "autorizado_por": "diretor",
+      "canal": "painel_local",
+      "nome": "faxineira",
+      "role": "operador",
+      "telegram_username": "faxineira",
+      "user_id": ""
     }
   ]
 }

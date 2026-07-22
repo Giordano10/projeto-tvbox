@@ -62,7 +62,7 @@ flask_secret_key: desenvolvimento-tvb
 picoclaw:
   habilitado: true
   bin: /home/admin/picoclaw_agent
-  modelo: gemini-flash
+  modelo: antigravity
   mensageiro: telegram
 EOF
 fi

@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 import re
 import unicodedata
 from typing import Any
+import json
+import requests
 
 
 def _normalize_text(value: str) -> str:
@@ -19,6 +21,7 @@ class Interpretation:
     midia: str | None = None
     titulo: str | None = None
     corpo: str | None = None
+    duracao_minutos: int | None = None
     confianca: float = 0.0
     requer_confirmacao: bool = False
     observacoes: list[str] = field(default_factory=list)
@@ -72,10 +75,35 @@ def infer_action(text: str, attachment_present: bool) -> str:
         return "gerar_slide"
     if attachment_present:
         return "exibir"
-    return "exibir"
+    return "gerar_slide"
 
 
-def infer_payload(text: str, screen_catalog: dict[str, Any] | list[str], attachment_present: bool = False) -> Interpretation:
+def infer_payload(text: str, screen_catalog: dict[str, Any] | list[str], attachment_present: bool = False, ai_config: dict[str, Any] | None = None) -> Interpretation:
+    if ai_config and ai_config.get("api_key"):
+        try:
+            api_key = ai_config.get("api_key")
+            model = ai_config.get("model", "gemini-2.5-flash")
+            api_base = ai_config.get("api_base", "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
+            prompt = f"Você é o sistema da TV Box. Interprete a intenção. Telas: {list(_normalize_catalog(screen_catalog).keys())}. Ações: gerar_slide, exibir, limpar, rotacionar, autorizar_usuario, revogar_usuario. {'IMPORTANTE: O usuário anexou uma MÍDIA, então a ação principal DEVE ser exibir, foque apenas em descobrir a tela.' if attachment_present else 'Se for um aviso ou lanche sem imagem, gerar_slide.'} Se o usuário pedir um tempo limite (ex: 'por 10 minutos', 'durante 1 hora'), extraia como duracao_minutos inteiro. Retorne JSON estrito: {{\"acao\":\"...\",\"tela\":\"...\",\"titulo\":\"...\",\"corpo\":\"...\",\"duracao_minutos\":10}}. Texto: '{text}'"
+            response = requests.post(
+                f"{api_base}/models/{model}:generateContent?key={api_key}",
+                json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}},
+                timeout=5
+            )
+            if response.ok:
+                raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+                parsed = json.loads(raw.replace("```json", "").replace("```", "").strip())
+                return Interpretation(
+                    acao=parsed.get("acao", "exibir" if attachment_present else "gerar_slide"),
+                    tela=parsed.get("tela"),
+                    titulo=parsed.get("titulo"),
+                    corpo=parsed.get("corpo"),
+                    duracao_minutos=parsed.get("duracao_minutos"),
+                    confianca=0.95
+                )
+        except Exception as e:
+            print(f"Erro AI API: {e}")
+
     screen = infer_screen(text, screen_catalog)
     action = infer_action(text, attachment_present)
     normalized = _normalize_text(text)
@@ -98,20 +126,29 @@ def infer_payload(text: str, screen_catalog: dict[str, Any] | list[str], attachm
     if "telegram" in normalized or "whatsapp" in normalized:
         notes.append("origem presumida de mensageiro")
 
+    duracao_minutos = None
+    min_match = re.search(r"(\d+)\s*minuto", normalized)
+    if min_match:
+        duracao_minutos = int(min_match.group(1))
+    hora_match = re.search(r"(\d+)\s*hora", normalized)
+    if hora_match:
+        duracao_minutos = int(hora_match.group(1)) * 60
+
     return Interpretation(
         acao=action,
         tela=screen,
         midia=None,
         titulo=title,
         corpo=body,
+        duracao_minutos=duracao_minutos,
         confianca=confidence,
         requer_confirmacao=requires_confirmation,
         observacoes=notes,
     )
 
 
-def build_command(text: str, screen_catalog: dict[str, Any] | list[str], attachment_path: str | None = None) -> dict[str, Any]:
-    interpretation = infer_payload(text, screen_catalog, attachment_present=bool(attachment_path))
+def build_command(text: str, screen_catalog: dict[str, Any] | list[str], attachment_path: str | None = None, ai_config: dict[str, Any] | None = None) -> dict[str, Any]:
+    interpretation = infer_payload(text, screen_catalog, attachment_present=bool(attachment_path), ai_config=ai_config)
     normalized = _normalize_text(text)
 
     target_user_id = None
@@ -138,6 +175,7 @@ def build_command(text: str, screen_catalog: dict[str, Any] | list[str], attachm
         "midia": attachment_path,
         "titulo": interpretation.titulo,
         "corpo": interpretation.corpo,
+        "duracao_minutos": interpretation.duracao_minutos,
         "confianca": interpretation.confianca,
         "requer_confirmacao": interpretation.requer_confirmacao,
         "observacoes": interpretation.observacoes,

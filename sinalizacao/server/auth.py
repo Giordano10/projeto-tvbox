@@ -41,6 +41,20 @@ def verify_local_login(whitelist: dict[str, Any], username: str, password: str) 
     return False
 
 
+def register_local_user(whitelist: dict[str, Any], username: str, password: str) -> bool:
+    for entry in whitelist.setdefault("painel_local", []):
+        if entry.get("user") == username:
+            return False
+            
+    whitelist["painel_local"].append({
+        "user": username,
+        "hash_senha": hash_password(password),
+        "ativo": True,
+        "role": "diretor"
+    })
+    return True
+
+
 def is_authorized_messenger_sender(
     whitelist: dict[str, Any],
     channel: str,

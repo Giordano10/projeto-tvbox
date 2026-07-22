@@ -69,7 +69,7 @@ class ExibidorPlayer:
                 downloaded = download_media(self.config.gestor_base_url, screen_state.src, destination)
                 print(f"[+] Download concluido! Exibindo imagem via fbi...")
                 displayed = display_image(downloaded, command=self.config.display_command)
-                self.state.mark_download(screen_state.src, str(downloaded))
+                self.state.mark_download(screen_state.src, screen_state.tipo, str(downloaded))
                 if not displayed:
                     print("[!] Alerta: O comando de exibicao local (fbi) nao foi encontrado no sistema ou falhou.")
                     self.state.mark_error("comando de exibicao nao encontrado")
@@ -90,3 +90,18 @@ class ExibidorPlayer:
         while True:
             self.step()
             time.sleep(self.config.polling_segundos)
+
+if __name__ == "__main__":
+    import sys
+    from .config import load_exibidor_config
+    
+    env_file = Path("exibidor.env")
+    print(f"[*] Iniciando Player Exibidor. Lendo {env_file}...")
+    
+    if not env_file.exists():
+        print(f"[!] Erro: Arquivo {env_file} nao encontrado. O player precisa deste arquivo para iniciar.")
+        sys.exit(1)
+        
+    config = load_exibidor_config(env_file)
+    player = ExibidorPlayer(config)
+    player.run_forever()

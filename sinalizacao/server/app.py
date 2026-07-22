@@ -237,14 +237,15 @@ PANEL_HTML = """<!doctype html>
                     <p class="logo-sub">Sinalização Digital Local-First</p>
                 </div>
             </div>
-            <div id="authStatus">
-                <span class="status-badge badge-offline">Desconectado</span>
+            <div id="authStatus" style="display: flex; align-items: center; gap: 16px;">
+                <span style="font-size: 14px; color: var(--muted);">👤 Logado como: <strong style="color: var(--text);">{{ username }}</strong></span>
+                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 13px; font-weight: 500;">Sair</a>
             </div>
         </div>
         <nav class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('telas')">📺 Controle de Telas</button>
             <button class="tab-btn" onclick="switchTab('cartazes')">🎨 Gerador de Cartazes</button>
-            <button class="tab-btn" onclick="switchTab('picoclaw')">🤖 Simulador PicoClaw</button>
+            <button class="tab-btn" onclick="switchTab('picoclaw')">💬 Chat Interativo</button>
             <button class="tab-btn" onclick="switchTab('dispositivos')">📡 Dispositivos & IPs</button>
             <button class="tab-btn" onclick="switchTab('auditoria')">📋 Auditoria & Permissões</button>
         </nav>
@@ -255,23 +256,6 @@ PANEL_HTML = """<!doctype html>
         <div id="tab-telas" class="tab-content active">
             <div class="grid-2">
                 <div class="card">
-                    <h3 class="card-title">Login do Operador</h3>
-                    <div style="display: grid; gap: 12px;">
-                        <div class="grid-2">
-                            <div>
-                                <label for="user">Usuário</label>
-                                <input id="user" value="diretor" placeholder="Nome de usuário">
-                            </div>
-                            <div>
-                                <label for="senha">Senha</label>
-                                <input id="senha" type="password" value="trocar123" placeholder="Senha">
-                            </div>
-                        </div>
-                        <button id="btnLogin" onclick="login()">Entrar no Painel</button>
-                    </div>
-
-                    <hr style="border: 0; border-top: 1px solid var(--panel-border); margin: 20px 0;">
-
                     <h3 class="card-title">Publicar Conteúdo em Tela</h3>
                     <div style="display: grid; gap: 12px;">
                         <div>
@@ -319,20 +303,23 @@ PANEL_HTML = """<!doctype html>
             </div>
         </div>
 
-        <!-- ABA 3: SIMULADOR PICOCLAW -->
+        <!-- ABA 3: CHAT INTERATIVO -->
         <div id="tab-picoclaw" class="tab-content">
             <div class="card" style="max-width: 700px; margin: 0 auto;">
-                <h3 class="card-title">Assistente PicoClaw em Linguagem Natural</h3>
-                <p style="font-size: 13px; color: var(--muted); margin-top: -8px;">Simule comandos enviados por gestores no chat (ex: "coloca o aviso da reuniao na tv_saguao", "autorizar @operador_sala").</p>
+                <h3 class="card-title">Assistente em Linguagem Natural</h3>
+                <p style="font-size: 13px; color: var(--muted); margin-top: -8px;">Envie instruções em linguagem natural ou adicione mídias para as telas (ex: "coloca o aviso da reuniao na tv_saguao").</p>
                 
                 <div id="chatHistory" class="chat-box">
-                    <div class="chat-msg system">PicoClaw Bridge pronto para comandos de voz ou texto</div>
+                    <div class="chat-msg system">Assistente pronto para comandos.</div>
                 </div>
 
-                <div style="display: flex; gap: 10px;">
-                    <input id="inputChat" placeholder="Digite uma instrução em linguagem natural..." onkeypress="if(event.key==='Enter') enviarComandoChat()">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label for="chatAnexo" style="cursor: pointer; padding: 10px; background: var(--input-bg); border-radius: 6px; border: 1px solid var(--panel-border);" title="Anexar Imagem">📎</label>
+                    <input type="file" id="chatAnexo" accept="image/*,video/*" style="display: none;" onchange="updateAnexoLabel(this)">
+                    <input id="inputChat" style="flex: 1;" placeholder="Digite uma instrução em linguagem natural..." onkeypress="if(event.key==='Enter') enviarComandoChat()">
                     <button style="width: auto; padding: 0 24px;" onclick="enviarComandoChat()">Enviar</button>
                 </div>
+                <div id="anexoLabel" style="font-size: 12px; color: var(--success); margin-top: 5px; display: none;"></div>
             </div>
         </div>
 
@@ -388,8 +375,6 @@ PANEL_HTML = """<!doctype html>
                 const data = await requestJson('/api/config');
                 currentConfig = data;
                 
-                document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-online">Autenticado</span>';
-                
                 const screens = data.screens || [];
                 const selectTela = document.getElementById('selectTela');
                 const slideTela = document.getElementById('slideTela');
@@ -443,20 +428,10 @@ PANEL_HTML = """<!doctype html>
                 `).join('');
 
             } catch (e) {
-                document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-offline">Não Autenticado</span>';
+                document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-offline">Sessão Expirada</span> <a href="/login" style="color:var(--danger);font-size:12px;">Fazer Login</a>';
             }
         }
 
-        async function login() {
-            try {
-                const user = document.getElementById('user').value;
-                const senha = document.getElementById('senha').value;
-                await requestJson('/api/login', { method: 'POST', body: JSON.stringify({ user, senha }) });
-                await refresh();
-            } catch (e) {
-                alert('Erro de Login: ' + e.message);
-            }
-        }
 
         async function exibirMidia() {
             try {
@@ -496,21 +471,52 @@ PANEL_HTML = """<!doctype html>
 
         async function enviarComandoChat() {
             const input = document.getElementById('inputChat');
+            const anexo = document.getElementById('chatAnexo');
             const texto = input.value.trim();
-            if (!texto) return;
+            if (!texto && (!anexo || !anexo.files.length)) return;
 
             const history = document.getElementById('chatHistory');
-            history.innerHTML += `<div class="chat-msg user">${texto}</div>`;
+            history.innerHTML += `<div class="chat-msg user">${texto || '[Mídia Anexada]'}</div>`;
             input.value = '';
 
+            const formData = new FormData();
+            if (texto) formData.append('texto', texto);
+            if (anexo && anexo.files.length > 0) {
+                formData.append('midia', anexo.files[0]);
+                // Clear the file input immediately
+                anexo.value = '';
+                document.getElementById('anexoLabel').style.display = 'none';
+            }
+
             try {
-                const res = await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ texto }) });
+                const response = await fetch('/api/comando', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.status === 401) {
+                    document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-offline">Desconectado</span>';
+                    throw new Error('Sessão expirada. Faça login novamente.');
+                }
+                
+                const res = await response.json();
+                if (!response.ok) throw new Error(res.reason || res.message || 'Erro');
                 history.innerHTML += `<div class="chat-msg bot">✅ Ação Executada: ${JSON.stringify(res, null, 2)}</div>`;
                 await refresh();
             } catch (e) {
                 history.innerHTML += `<div class="chat-msg bot" style="background:#451a1a; color:#f87171;">⚠️ Recusado: ${e.message}</div>`;
             }
             history.scrollTop = history.scrollHeight;
+        }
+
+        function updateAnexoLabel(inputElement) {
+            const label = document.getElementById('anexoLabel');
+            if (inputElement.files && inputElement.files.length > 0) {
+                label.textContent = `📎 Anexo: ${inputElement.files[0].name}`;
+                label.style.display = 'block';
+            } else {
+                label.style.display = 'none';
+            }
         }
 
         refresh();
@@ -574,6 +580,123 @@ VIEWER_HTML = """<!doctype html>
 </html>"""
 
 
+LOGIN_HTML = """<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login • Gestor PicoClaw</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090d16; --panel: rgba(15, 23, 42, 0.85); --panel-border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc; --muted: #94a3b8; --accent: #14b8a6;
+            --accent-gradient: linear-gradient(135deg, #0d9488, #2563eb);
+            --input-bg: #0f172a;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: radial-gradient(ellipse at top, #1e293b 0%, #0f172a 50%, #090d16 100%); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .login-card { background: var(--panel); backdrop-filter: blur(16px); border: 1px solid var(--panel-border); border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .logo { text-align: center; margin-bottom: 24px; }
+        .logo h1 { font-size: 24px; margin: 0; }
+        .logo p { font-size: 13px; color: var(--muted); margin: 4px 0 0 0; }
+        .tabs { display: flex; border-bottom: 1px solid var(--panel-border); margin-bottom: 24px; }
+        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; color: var(--muted); font-weight: 500; border-bottom: 2px solid transparent; transition: 0.2s; }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; margin-bottom: 6px; color: var(--muted); }
+        input { width: 100%; background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 8px; color: var(--text); padding: 12px; font-family: inherit; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--accent); }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; background: var(--accent-gradient); color: #fff; margin-top: 8px; transition: 0.2s; }
+        button:hover { opacity: 0.95; }
+        .error { color: #ef4444; font-size: 13px; margin-bottom: 16px; text-align: center; display: none; }
+        .success { color: #22c55e; font-size: 13px; margin-bottom: 16px; text-align: center; display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">
+            <h1>TV Box Admin</h1>
+            <p>Acesso Restrito ao Diretor</p>
+        </div>
+        <div class="tabs">
+            <div class="tab active" onclick="setMode('login')" id="tab-login">Entrar</div>
+            <div class="tab" onclick="setMode('register')" id="tab-register">Cadastrar</div>
+        </div>
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+        <form id="authForm" onsubmit="submitForm(event)">
+            <div class="form-group">
+                <label>Usuário</label>
+                <input type="text" id="username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" id="submitBtn">Entrar no Sistema</button>
+        </form>
+    </div>
+
+    <script>
+        let mode = 'login';
+        
+        function setMode(newMode) {
+            mode = newMode;
+            document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+            document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+            document.getElementById('submitBtn').textContent = mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta de Diretor';
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+        }
+
+        async function submitForm(e) {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const btn = document.getElementById('submitBtn');
+            const err = document.getElementById('errorMsg');
+            const succ = document.getElementById('successMsg');
+            
+            btn.disabled = true;
+            btn.textContent = 'Aguarde...';
+            err.style.display = 'none';
+            succ.style.display = 'none';
+
+            try {
+                const res = await fetch(`/${mode}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: u, password: p})
+                });
+                const data = await res.json();
+                
+                if(res.ok) {
+                    if (mode === 'register') {
+                        succ.textContent = 'Cadastro realizado! Faça login para entrar.';
+                        succ.style.display = 'block';
+                        setMode('login');
+                        document.getElementById('password').value = '';
+                    } else {
+                        window.location.href = '/painel';
+                    }
+                } else {
+                    err.textContent = data.message || 'Erro de autenticação';
+                    err.style.display = 'block';
+                }
+            } catch (error) {
+                err.textContent = 'Erro de rede. Tente novamente.';
+                err.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = mode === 'login' ? 'Entrar no Sistema' : 'Criar Conta de Diretor';
+            }
+        }
+    </script>
+</body>
+</html>"""
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = str(service.settings.get("flask_secret_key", "desenvolvimento-tvb"))
@@ -582,9 +705,11 @@ def create_app() -> Flask:
         @wraps(view)
         def wrapped(*args, **kwargs):
             if not session.get("user"):
-                return jsonify({"status": "erro", "message": "autenticacao requerida"}), 401
+                if request.path.startswith("/api"):
+                    return jsonify({"status": "erro", "message": "autenticacao requerida"}), 401
+                from flask import redirect, url_for
+                return redirect(url_for("web_login"))
             return view(*args, **kwargs)
-
         return wrapped
 
     @app.get("/")
@@ -599,9 +724,45 @@ def create_app() -> Flask:
             }
         )
 
+    @app.get("/login")
+    def web_login():
+        if session.get("user"):
+            from flask import redirect, url_for
+            return redirect(url_for("painel"))
+        return render_template_string(LOGIN_HTML)
+
+    @app.post("/login")
+    def process_web_login():
+        payload = request.get_json(force=True, silent=True) or {}
+        username = str(payload.get("username", ""))
+        password = str(payload.get("password", ""))
+        if not service.authenticate_local_user(username, password):
+            return jsonify({"status": "erro", "message": "Credenciais inválidas"}), 401
+        session.clear()
+        session["user"] = username
+        return jsonify({"status": "ok", "user": username})
+
+    @app.post("/register")
+    def process_web_register():
+        payload = request.get_json(force=True, silent=True) or {}
+        username = str(payload.get("username", ""))
+        password = str(payload.get("password", ""))
+        if not username or not password:
+            return jsonify({"status": "erro", "message": "Dados incompletos"}), 400
+        if service.register_local_user(username, password):
+            return jsonify({"status": "ok", "message": "Cadastrado com sucesso!"})
+        return jsonify({"status": "erro", "message": "Usuário já existe"}), 409
+
+    @app.get("/logout")
+    def web_logout():
+        session.clear()
+        from flask import redirect, url_for
+        return redirect(url_for("web_login"))
+
     @app.get("/painel")
+    @login_required
     def painel():
-        return render_template_string(PANEL_HTML)
+        return render_template_string(PANEL_HTML, username=session.get("user"))
 
     @app.get("/visualizar/<screen_id>")
     def visualizar(screen_id: str):
@@ -614,7 +775,7 @@ def create_app() -> Flask:
         payload = request.get_json(force=True, silent=True) or {}
         username = str(payload.get("user", ""))
         password = str(payload.get("senha", ""))
-        if not service.authenticate_local(username, password):
+        if not service.authenticate_local_user(username, password):
             return jsonify({"status": "erro", "message": "credenciais invalidas"}), 401
         session.clear()
         session["user"] = username
@@ -697,6 +858,21 @@ def create_app() -> Flask:
     @app.post("/api/comando")
     @login_required
     def comando():
+        if request.content_type and request.content_type.startswith("multipart/form-data"):
+            texto = request.form.get("texto", "").strip()
+            arquivo = request.files.get("midia")
+            media_ref = None
+            if arquivo and arquivo.filename:
+                import os
+                from werkzeug.utils import secure_filename
+                filename = secure_filename(arquivo.filename)
+                upload_path = os.path.join(service.paths.biblioteca_dir, filename)
+                arquivo.save(upload_path)
+                media_ref = "biblioteca/" + filename
+            
+            result = service.handle_text_command(texto, origin="painel_local", actor=session.get("user", ""), attachment_path=media_ref)
+            return jsonify(result), 200 if result.get("status") == "ok" else 400
+
         payload = request.get_json(force=True, silent=True) or {}
         if "texto" in payload and payload.get("texto"):
             result = service.handle_text_command(str(payload["texto"]), origin="painel_local", actor=session.get("user", ""))

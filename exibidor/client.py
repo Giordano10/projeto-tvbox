@@ -51,6 +51,9 @@ def fetch_screen_state(base_url: str, screen_id: str, timeout_seconds: int = 5) 
 
 def download_media(base_url: str, relative_src: str, destination: Path, timeout_seconds: int = 10) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and destination.stat().st_size > 0:
+        return destination
+
     request = Request(build_content_url(base_url, relative_src), headers={"Accept": "*/*"})
     with urlopen(request, timeout=timeout_seconds) as response, destination.open("wb") as handle:
         shutil.copyfileobj(response, handle)

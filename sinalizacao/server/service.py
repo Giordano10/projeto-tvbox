@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import shutil
 from pathlib import Path
@@ -130,8 +130,13 @@ class SignalizacaoService:
         self._ensure_device_status_registry()
 
     def _load_settings(self) -> dict[str, Any]:
+        import os
+        from dotenv import load_dotenv
+        load_dotenv(self.paths.root / ".env")
+        
+        settings = {}
         if not self.paths.settings_file.exists():
-            return {
+            settings = {
                 "porta": 8080,
                 "modo": "local",
                 "polling_segundos": 5,
@@ -139,12 +144,34 @@ class SignalizacaoService:
                 "picoclaw": {
                     "habilitado": True,
                     "bin": "/home/admin/picoclaw_agent",
-                    "modelo": "gemini-flash",
+                    "modelo": "antigravity",
                     "mensageiro": "telegram",
                 },
             }
-        with self.paths.settings_file.open("r", encoding="utf-8") as handle:
-            return yaml.safe_load(handle) or {}
+        else:
+            with self.paths.settings_file.open("r", encoding="utf-8") as handle:
+                settings = yaml.safe_load(handle) or {}
+
+        # Override with environment variables
+        if os.getenv("FLASK_SECRET_KEY"):
+            settings["flask_secret_key"] = os.getenv("FLASK_SECRET_KEY")
+        if os.getenv("GEMINI_API_KEY"):
+            if "ai" not in settings:
+                settings["ai"] = {}
+            settings["ai"]["api_key"] = os.getenv("GEMINI_API_KEY")
+
+        return settings
+
+    def authenticate_local_user(self, username: str, password: str) -> bool:
+        from .auth import verify_local_login
+        return verify_local_login(self.whitelist, username, password)
+
+    def register_local_user(self, username: str, password: str) -> bool:
+        from .auth import register_local_user as do_register, save_whitelist
+        success = do_register(self.whitelist, username, password)
+        if success:
+            save_whitelist(self.paths.whitelist_file, self.whitelist)
+        return success
 
     def _ensure_initial_state(self) -> None:
         state = self.state_store.read({})
@@ -196,6 +223,15 @@ class SignalizacaoService:
 
     def get_screen_state(self, screen: str) -> dict[str, Any]:
         state = self.get_state().get(screen, {"tipo": "vazio", "src": "", "desde": ""})
+        
+        # Check expiration
+        expira_em = state.get("expira_em")
+        if expira_em and _utc_now() > expira_em:
+            state["tipo"] = "playlist"
+            state["src"] = ""
+            state["expira_em"] = ""
+            self._save_screen_state(screen, state)
+            
         if state.get("tipo") == "playlist":
             media_list = self.list_media()
             if media_list:
@@ -445,6 +481,11 @@ class SignalizacaoService:
             result = {"status": "recusado", "reason": "acao ausente"}
             self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
             return result
+            
+        duracao_minutos = command.get("duracao_minutos")
+        expira_em = ""
+        if isinstance(duracao_minutos, int) and duracao_minutos > 0:
+            expira_em = (datetime.now(timezone.utc) + timedelta(minutes=duracao_minutos)).isoformat()
 
         if action == "limpar":
             if not screen:
@@ -478,7 +519,7 @@ class SignalizacaoService:
             output_path = self.paths.gerado_dir / output_name
             render_slide(title=title, body=body, output_path=output_path)
             relative = str(output_path.relative_to(self.paths.content_dir)).replace("\\", "/")
-            self._save_screen_state(screen, {"tipo": "slide", "src": relative, "desde": timestamp})
+            self._save_screen_state(screen, {"tipo": "slide", "src": relative, "desde": timestamp, "expira_em": expira_em})
             result = {"status": "ok", "acao": action, "tela": screen, "midia": relative}
             self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
             return result
@@ -522,8 +563,15 @@ class SignalizacaoService:
         self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
         return result
 
-    def handle_text_command(self, text: str, origin: str, actor: str) -> dict[str, Any]:
-        command = build_command(text, self.screen_catalog())
+    def handle_text_command(self, text: str, origin: str, actor: str, attachment_path: str | None = None) -> dict[str, Any]:
+        ai_config = self.settings.get("ai", {})
+        command = build_command(text, self.screen_catalog(), attachment_path=attachment_path, ai_config=ai_config)
+        if command.get("acao") in {"autorizar_usuario", "revogar_usuario", "listar_autorizados"}:
+            if command.get("acao") == "autorizar_usuario":
+                return self.authorize_messenger_user(command, actor=actor, origin=origin)
+            if command.get("acao") == "revogar_usuario":
+                return self.revoke_messenger_user(command, actor=actor, origin=origin)
+            return {"status": "ok", "autorizados": self.list_authorized_users(), "historico": self.list_authorization_history()}
         return self.apply_command(command, origin=origin, actor=actor, raw_text=text)
 
     def handle_messenger_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -536,7 +584,8 @@ class SignalizacaoService:
         if attachment_path is not None:
             media_ref = self._promote_attachment(attachment_path, event.attachment_name)
 
-        command = build_command(event.text, self.screen_catalog(), attachment_path=media_ref)
+        ai_config = self.settings.get("ai", {})
+        command = build_command(event.text, self.screen_catalog(), attachment_path=media_ref, ai_config=ai_config)
 
         if command.get("acao") in {"autorizar_usuario", "revogar_usuario", "listar_autorizados"}:
             if not self.validate_gestor_sender(event.channel, event.sender_id, event.sender_username):

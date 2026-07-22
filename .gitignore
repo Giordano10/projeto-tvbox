@@ -8,3 +8,12 @@ dist/
 *.egg-info/
 content/gerado/
 logs/*.log
+.env
+exibidor.env
+
+# Docs & Testes Locais
+SPEC_*.md
+FLUXO_*.md
+INSTALACAO_*.md
+test.py
+test2.py
