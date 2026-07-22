@@ -4,10 +4,16 @@
     "src": "",
     "tipo": "vazio"
   },
+  "tv_patio": {
+    "desde": "2026-07-22T19:58:06.952213+00:00",
+    "src": "",
+    "tipo": "vazio"
+  },
   "tv_saguao": {
-    "desde": "2026-07-22T18:16:56.853156+00:00",
-    "src": "biblioteca/Tapis-PKMN-07.jpg",
-    "tipo": "imagem"
+    "desde": "2026-07-22T18:58:30.735041+00:00",
+    "expira_em": "",
+    "src": "biblioteca/menina_cabelo_azul.jpg",
+    "tipo": "playlist"
   },
   "tv_sala": {
     "desde": "",

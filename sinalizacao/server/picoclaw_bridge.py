@@ -25,6 +25,7 @@ class Interpretation:
     confianca: float = 0.0
     requer_confirmacao: bool = False
     observacoes: list[str] = field(default_factory=list)
+    alvo_ip: str | None = None
 
 
 def _normalize_catalog(screen_catalog: dict[str, Any] | list[str]) -> dict[str, list[str]]:
@@ -73,6 +74,10 @@ def infer_action(text: str, attachment_present: bool) -> str:
         return "rotacionar"
     if any(keyword in normalized for keyword in ("slide", "cartaz", "aviso", "crie", "gere", "gerar")):
         return "gerar_slide"
+    if any(keyword in normalized for keyword in ("cadastrar", "adicionar tv", "nova tv", "novo dispositivo")):
+        return "cadastrar_dispositivo"
+    if any(keyword in normalized for keyword in ("excluir tv", "remover tv", "deletar tv", "excluir tela", "remover tela", "deletar tela")):
+        return "excluir_dispositivo"
     if attachment_present:
         return "exibir"
     return "gerar_slide"
@@ -84,7 +89,7 @@ def infer_payload(text: str, screen_catalog: dict[str, Any] | list[str], attachm
             api_key = ai_config.get("api_key")
             model = ai_config.get("model", "gemini-2.5-flash")
             api_base = ai_config.get("api_base", "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
-            prompt = f"Você é o sistema da TV Box. Interprete a intenção. Telas: {list(_normalize_catalog(screen_catalog).keys())}. Ações: gerar_slide, exibir, limpar, rotacionar, autorizar_usuario, revogar_usuario. {'IMPORTANTE: O usuário anexou uma MÍDIA, então a ação principal DEVE ser exibir, foque apenas em descobrir a tela.' if attachment_present else 'Se for um aviso ou lanche sem imagem, gerar_slide.'} Se o usuário pedir um tempo limite (ex: 'por 10 minutos', 'durante 1 hora'), extraia como duracao_minutos inteiro. Retorne JSON estrito: {{\"acao\":\"...\",\"tela\":\"...\",\"titulo\":\"...\",\"corpo\":\"...\",\"duracao_minutos\":10}}. Texto: '{text}'"
+            prompt = f"Você é o sistema da TV Box. Interprete a intenção. Telas: {list(_normalize_catalog(screen_catalog).keys())}. Ações: gerar_slide, exibir, limpar, rotacionar, autorizar_usuario, revogar_usuario, cadastrar_dispositivo, excluir_dispositivo. {'IMPORTANTE: O usuário anexou uma MÍDIA, então a ação principal DEVE ser exibir, foque apenas em descobrir a tela.' if attachment_present else 'Se for um aviso ou lanche sem imagem, gerar_slide. Para cadastrar_dispositivo extraia IP (alvo_ip) e nome da tv (tela). Para excluir_dispositivo, extraia o nome da tv.'} Se o usuário pedir um tempo limite, extraia como duracao_minutos inteiro. Retorne JSON estrito: {{\"acao\":\"...\",\"tela\":\"...\",\"titulo\":\"...\",\"corpo\":\"...\",\"duracao_minutos\":10,\"alvo_ip\":\"192.168.x.x\"}}. Texto: '{text}'"
             response = requests.post(
                 f"{api_base}/models/{model}:generateContent?key={api_key}",
                 json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}},
@@ -99,6 +104,7 @@ def infer_payload(text: str, screen_catalog: dict[str, Any] | list[str], attachm
                     titulo=parsed.get("titulo"),
                     corpo=parsed.get("corpo"),
                     duracao_minutos=parsed.get("duracao_minutos"),
+                    alvo_ip=parsed.get("alvo_ip"),
                     confianca=0.95
                 )
         except Exception as e:
@@ -144,6 +150,7 @@ def infer_payload(text: str, screen_catalog: dict[str, Any] | list[str], attachm
         confianca=confidence,
         requer_confirmacao=requires_confirmation,
         observacoes=notes,
+        alvo_ip=None,
     )
 
 
@@ -183,5 +190,6 @@ def build_command(text: str, screen_catalog: dict[str, Any] | list[str], attachm
         "alvo_user_id": target_user_id,
         "alvo_username": target_username,
         "alvo_nome": target_name,
+        "alvo_ip": interpretation.alvo_ip,
     }
     return command

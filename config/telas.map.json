@@ -1,14 +1,38 @@
 {
+  "tv_diretoria": {
+    "aliases": [
+      "tv da diretoria",
+      "diretoria",
+      "secretaria"
+    ],
+    "label": "TV da Diretoria"
+  },
+  "tv_patio": {
+    "aliases": [
+      "tv_patio",
+      "tv patio"
+    ],
+    "label": "Tv Patio"
+  },
   "tv_saguao": {
-    "label": "TV do Saguão",
-    "aliases": ["tv do saguao", "tv do saguão", "saguao", "saguão", "saguão principal", "recepcao", "recepção"]
+    "aliases": [
+      "tv do saguao",
+      "tv do saguão",
+      "saguao",
+      "saguão",
+      "saguão principal",
+      "recepcao",
+      "recepção"
+    ],
+    "label": "TV do Saguão"
   },
   "tv_sala": {
-    "label": "TV da Sala",
-    "aliases": ["tv da sala", "tv sala", "sala", "sala de aula"]
-  },
-  "tv_diretoria": {
-    "label": "TV da Diretoria",
-    "aliases": ["tv da diretoria", "diretoria", "secretaria"]
+    "aliases": [
+      "tv da sala",
+      "tv sala",
+      "sala",
+      "sala de aula"
+    ],
+    "label": "TV da Sala"
   }
 }

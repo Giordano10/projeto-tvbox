@@ -275,9 +275,19 @@ PANEL_HTML = """<!doctype html>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title">Galeria da Biblioteca</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 class="card-title" style="margin-bottom: 0;">Galeria da Biblioteca</h3>
+                        <label for="uploadMidiaInput" class="tab-btn" style="padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--accent); color: var(--accent); font-size: 12px; font-weight: bold;">⬆️ Upload</label>
+                        <input type="file" id="uploadMidiaInput" accept="image/*,video/*" style="display: none;" onchange="uploadMidia(this)">
+                    </div>
                     <div id="mediaGallery" class="media-grid"></div>
                 </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h3 class="card-title">Monitoramento ao Vivo</h3>
+                <p style="font-size: 13px; color: var(--muted); margin-top: -8px;">Clique na tela para abrir o player virtual e visualizar o conteúdo em tamanho real.</p>
+                <div id="livePreviews" class="media-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));"></div>
             </div>
         </div>
 
@@ -286,10 +296,6 @@ PANEL_HTML = """<!doctype html>
             <div class="card" style="max-width: 650px; margin: 0 auto;">
                 <h3 class="card-title">Gerar Cartaz / Slide em HD</h3>
                 <div style="display: grid; gap: 16px;">
-                    <div>
-                        <label for="slideTela">TV de Destino</label>
-                        <select id="slideTela"></select>
-                    </div>
                     <div>
                         <label for="slideTitulo">Título do Cartaz</label>
                         <input id="slideTitulo" placeholder="Ex: Reunião de Pais e Mestres" value="Aviso Importante">
@@ -325,6 +331,21 @@ PANEL_HTML = """<!doctype html>
 
         <!-- ABA 4: DISPOSITIVOS & IPS -->
         <div id="tab-dispositivos" class="tab-content">
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 class="card-title">Cadastrar Novo Dispositivo (TV)</h3>
+                <div style="display: flex; gap: 16px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label>ID da Tela (ex: tv_patio)</label>
+                        <input id="newDeviceScreen" placeholder="Identificador único (sem espaços)">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>IP Fixo (Opcional)</label>
+                        <input id="newDeviceIp" placeholder="192.168.15.x">
+                    </div>
+                    <button style="width: auto; padding: 0 24px;" onclick="cadastrarDispositivo()">Cadastrar</button>
+                </div>
+            </div>
+
             <div class="card">
                 <h3 class="card-title">Equipamentos Cadastrados e Status de Heartbeat</h3>
                 <div id="devicesList" class="grid-3"></div>
@@ -377,19 +398,34 @@ PANEL_HTML = """<!doctype html>
                 
                 const screens = data.screens || [];
                 const selectTela = document.getElementById('selectTela');
-                const slideTela = document.getElementById('slideTela');
                 
                 selectTela.innerHTML = screens.map(s => `<option value="${s}">${s}</option>`).join('');
-                slideTela.innerHTML = screens.map(s => `<option value="${s}">${s}</option>`).join('');
 
                 // Galeria de mídias
                 const mediaGallery = document.getElementById('mediaGallery');
                 mediaGallery.innerHTML = (data.media || []).map(m => `
-                    <div class="media-item" onclick="document.getElementById('inputMidia').value='${m}'">
+                    <div class="media-item" style="position: relative;" onclick="document.getElementById('inputMidia').value='${m}'">
+                        <button style="position: absolute; top: 4px; right: 4px; background: rgba(220,38,38,0.8); color: white; border: none; border-radius: 4px; padding: 4px 6px; font-size: 12px; cursor: pointer; z-index: 10; width: auto; height: auto; min-width: 0;" onclick="event.stopPropagation(); excluirMidia('${m}')" title="Excluir Mídia">🗑️</button>
                         <img src="/conteudo/${m}" alt="${m}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'80\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%231e293b\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%2394a3b8\\' text-anchor=\\'middle\\'>Doc</text></svg>'">
                         <span>${m.replace('biblioteca/', '')}</span>
                     </div>
                 `).join('');
+
+                // Live Previews
+                const livePreviews = document.getElementById('livePreviews');
+                if (livePreviews) {
+                    livePreviews.innerHTML = screens.map(s => {
+                        const state = (data.state || {})[s] || {};
+                        const srcUrl = state.src ? `/conteudo/${state.src}` : 'data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'80\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%231e293b\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%2394a3b8\\' text-anchor=\\'middle\\'>VAZIO</text></svg>';
+                        return `
+                            <div class="media-item" style="border-color: ${state.src ? 'var(--accent)' : 'var(--panel-border)'};" onclick="window.open('/visualizar/${s}', '_blank')">
+                                <img src="${srcUrl}" alt="${s}" style="height: 110px;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'80\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%231e293b\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%2394a3b8\\' text-anchor=\\'middle\\'>Erro</text></svg>'">
+                                <span style="font-weight: 600; color: #fff; font-size: 13px; margin-top: 8px;">${s}</span>
+                                <span style="font-size: 10px; color: var(--muted);">${state.tipo || 'Desconhecido'}</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
 
                 // Dispositivos
                 const devicesList = document.getElementById('devicesList');
@@ -397,8 +433,9 @@ PANEL_HTML = """<!doctype html>
                     const state = (data.state || {})[d.screen_id] || {};
                     const isOnline = d.last_seen_ok;
                     return `
-                        <div class="device-card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <div class="device-card" style="position: relative;">
+                            <button style="position: absolute; top: 12px; right: 12px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 6px; padding: 6px; font-size: 14px; cursor: pointer; z-index: 10; width: auto; height: auto; min-width: 0; line-height: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.4);" onclick="excluirDispositivo('${d.screen_id}')" title="Excluir Dispositivo">🗑️</button>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-right: 30px;">
                                 <strong>${d.label || d.screen_id}</strong>
                                 <span class="status-badge ${isOnline ? 'badge-online' : 'badge-offline'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
                             </div>
@@ -438,8 +475,30 @@ PANEL_HTML = """<!doctype html>
                 const tela = document.getElementById('selectTela').value;
                 const midia = document.getElementById('inputMidia').value;
                 await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'exibir', tela, midia }) });
+                alert('Mídia enviada para exibição!');
                 await refresh();
-            } catch (e) { alert('Falha ao exibir: ' + e.message); }
+            } catch (e) { alert('Falha ao enviar mídia: ' + e.message); }
+        }
+
+        async function cadastrarDispositivo() {
+            try {
+                const screen = document.getElementById('newDeviceScreen').value.trim();
+                const ip = document.getElementById('newDeviceIp').value.trim();
+                if (!screen) return alert('ID da tela é obrigatório');
+                await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'cadastrar_dispositivo', tela: screen, alvo_ip: ip }) });
+                document.getElementById('newDeviceScreen').value = '';
+                document.getElementById('newDeviceIp').value = '';
+                alert('Dispositivo cadastrado com sucesso!');
+                await refresh();
+            } catch (e) { alert('Falha ao cadastrar dispositivo: ' + e.message); }
+        }
+
+        async function excluirDispositivo(screenId) {
+            if (!confirm(`Tem certeza que deseja EXCLUIR permanentemente o dispositivo "${screenId}" do sistema?`)) return;
+            try {
+                await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'excluir_dispositivo', tela: screenId }) });
+                await refresh();
+            } catch (e) { alert('Falha ao excluir dispositivo: ' + e.message); }
         }
 
         async function limparTela() {
@@ -460,11 +519,10 @@ PANEL_HTML = """<!doctype html>
 
         async function gerarSlide() {
             try {
-                const tela = document.getElementById('slideTela').value;
                 const titulo = document.getElementById('slideTitulo').value;
                 const corpo = document.getElementById('slideCorpo').value;
-                await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'gerar_slide', tela, titulo, corpo }) });
-                alert('Cartaz gerado e publicado!');
+                await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'gerar_slide', titulo, corpo }) });
+                alert('Cartaz gerado e adicionado à biblioteca!');
                 await refresh();
             } catch (e) { alert('Falha ao gerar cartaz: ' + e.message); }
         }
@@ -507,6 +565,31 @@ PANEL_HTML = """<!doctype html>
                 history.innerHTML += `<div class="chat-msg bot" style="background:#451a1a; color:#f87171;">⚠️ Recusado: ${e.message}</div>`;
             }
             history.scrollTop = history.scrollHeight;
+        }
+
+        async function excluirMidia(nome) {
+            if (!confirm(`Tem certeza que deseja apagar permanentemente o arquivo: ${nome.replace('biblioteca/', '')}?`)) return;
+            try {
+                await requestJson('/api/midia', { method: 'DELETE', body: JSON.stringify({ midia: nome }) });
+                await refresh();
+            } catch (e) { alert('Falha ao excluir mídia: ' + e.message); }
+        }
+
+        async function uploadMidia(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('midia', file);
+
+            try {
+                const response = await fetch('/api/midia', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('Erro ao fazer upload');
+                input.value = '';
+                await refresh();
+            } catch (e) {
+                alert('Falha ao fazer upload: ' + e.message);
+                input.value = '';
+            }
         }
 
         function updateAnexoLabel(inputElement) {
@@ -854,6 +937,40 @@ def create_app() -> Flask:
         except (FileNotFoundError, ValueError):
             abort(404)
         return send_file(resolved)
+
+    @app.post("/api/midia")
+    @login_required
+    def upload_midia():
+        if not request.files:
+            return jsonify({"status": "erro", "message": "Nenhum arquivo enviado"}), 400
+        
+        arquivo = request.files.get("midia")
+        if not arquivo or not arquivo.filename:
+            return jsonify({"status": "erro", "message": "Arquivo invalido"}), 400
+            
+        import os
+        from werkzeug.utils import secure_filename
+        filename = secure_filename(arquivo.filename)
+        upload_path = os.path.join(service.paths.biblioteca_dir, filename)
+        arquivo.save(upload_path)
+        return jsonify({"status": "ok", "message": "Upload concluído!"})
+
+    @app.delete("/api/midia")
+    @login_required
+    def delete_midia():
+        payload = request.get_json(force=True, silent=True) or {}
+        filename = str(payload.get("midia", "")).replace("biblioteca/", "").strip()
+        if not filename:
+            return jsonify({"status": "erro", "message": "Nome do arquivo ausente"}), 400
+            
+        import os
+        from werkzeug.utils import secure_filename
+        safe_name = secure_filename(filename)
+        target_path = os.path.join(service.paths.biblioteca_dir, safe_name)
+        if os.path.exists(target_path):
+            os.remove(target_path)
+            return jsonify({"status": "ok", "message": "Arquivo excluido!"})
+        return jsonify({"status": "erro", "message": "Arquivo não encontrado"}), 404
 
     @app.post("/api/comando")
     @login_required

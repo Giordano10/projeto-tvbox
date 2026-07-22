@@ -501,26 +501,13 @@ class SignalizacaoService:
             return result
 
         if action == "gerar_slide":
-            if not screen:
-                result = {"status": "recusado", "reason": "tela ausente"}
-                self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
-                return result
-            if screen not in self.available_screens():
-                result = {"status": "recusado", "reason": "tela inexistente"}
-                self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
-                return result
-            if not self._device_available(str(screen))[0]:
-                result = {"status": "recusado", "reason": self._device_available(str(screen))[1]}
-                self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
-                return result
             title = str(command.get("titulo") or "Aviso")
             body = str(command.get("corpo") or raw_text or "")
-            output_name = f"slide_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.png"
-            output_path = self.paths.gerado_dir / output_name
+            output_name = f"cartaz_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.png"
+            output_path = self.paths.biblioteca_dir / output_name
             render_slide(title=title, body=body, output_path=output_path)
             relative = str(output_path.relative_to(self.paths.content_dir)).replace("\\", "/")
-            self._save_screen_state(screen, {"tipo": "slide", "src": relative, "desde": timestamp, "expira_em": expira_em})
-            result = {"status": "ok", "acao": action, "tela": screen, "midia": relative}
+            result = {"status": "ok", "acao": action, "midia": relative}
             self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
             return result
 
@@ -538,6 +525,67 @@ class SignalizacaoService:
             current["desde"] = timestamp
             self._save_screen_state(screen, current)
             result = {"status": "ok", "acao": action, "tela": screen}
+            self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
+            return result
+
+        if action == "cadastrar_dispositivo":
+            if not screen:
+                result = {"status": "recusado", "reason": "nome da tv (tela) não informado"}
+                self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
+                return result
+            ip = command.get("alvo_ip") or ""
+            catalog = self.device_catalog_store.read({})
+            if screen not in catalog:
+                catalog[screen] = {
+                    "screen_id": screen,
+                    "label": screen.replace("_", " ").title(),
+                    "ip": ip,
+                    "ativo": False,
+                    "device_token": "",
+                    "aliases": [screen],
+                }
+            else:
+                if ip: catalog[screen]["ip"] = ip
+            self.device_catalog_store.write(catalog)
+            
+            state = self.state_store.read({})
+            if screen not in state:
+                state[screen] = {"tipo": "vazio", "src": "", "desde": timestamp}
+                self.state_store.write(state)
+
+            if self.screen_map is not None:
+                if screen not in self.screen_map:
+                    self.screen_map[screen] = {
+                        "label": screen.replace("_", " ").title(),
+                        "aliases": [screen, screen.replace("_", " ")]
+                    }
+                    save_json(self.paths.telas_map_file, self.screen_map)
+            
+            result = {"status": "ok", "acao": action, "tela": screen, "alvo_ip": ip, "message": f"TV {screen} cadastrada"}
+            self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
+            return result
+
+        if action == "excluir_dispositivo":
+            if not screen:
+                result = {"status": "recusado", "reason": "nome da tv (tela) não informado"}
+                self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
+                return result
+            
+            catalog = self.device_catalog_store.read({})
+            if screen in catalog:
+                del catalog[screen]
+                self.device_catalog_store.write(catalog)
+            
+            state = self.state_store.read({})
+            if screen in state:
+                del state[screen]
+                self.state_store.write(state)
+
+            if self.screen_map is not None and screen in self.screen_map:
+                del self.screen_map[screen]
+                save_json(self.paths.telas_map_file, self.screen_map)
+            
+            result = {"status": "ok", "acao": action, "tela": screen, "message": f"TV {screen} excluída"}
             self._append_audit({"timestamp": timestamp, "origin": origin, "actor": actor, "raw_text": raw_text, **result})
             return result
 
