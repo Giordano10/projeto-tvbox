@@ -61,7 +61,7 @@ class ExibidorPlayer:
             save_state(self.state_file, self.state)
             return {"status": "ok", "reason": "tela limpa"}
 
-        if screen_state.tipo in {"imagem", "slide"} and screen_state.src:
+        if screen_state.tipo in {"imagem", "slide", "playlist"} and screen_state.src:
             print(f"[+] Nova midia encontrada: {screen_state.src} ({screen_state.tipo})")
             destination = self.config.cache_dir / Path(screen_state.src).name
             try:

@@ -4,10 +4,14 @@ from pathlib import Path
 from typing import Any
 
 import json
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 DEFAULT_WHITELIST: dict[str, Any] = {"painel_local": [], "mensageiro": []}
+
+
+def hash_password(password: str) -> str:
+    return generate_password_hash(password)
 
 
 def load_whitelist(path: Path) -> dict[str, Any]:
@@ -30,7 +34,10 @@ def verify_local_login(whitelist: dict[str, Any], username: str, password: str) 
         stored_hash = str(entry.get("hash_senha", ""))
         if stored_hash.startswith("plain:"):
             return stored_hash.removeprefix("plain:") == password
-        return check_password_hash(stored_hash, password)
+        try:
+            return check_password_hash(stored_hash, password)
+        except ValueError:
+            return False
     return False
 
 

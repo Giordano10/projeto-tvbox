@@ -128,6 +128,32 @@ class SignalizacaoServiceTests(unittest.TestCase):
             self.assertEqual(result["status"], "recusado")
             self.assertIn("TV nao encontrada/cadastrada", result["reason"])
 
+    def test_hashed_password_login(self) -> None:
+        from sinalizacao.server.auth import hash_password, verify_local_login
+        hashed = hash_password("senha_segura_123")
+        whitelist = {"painel_local": [{"user": "admin", "hash_senha": hashed, "ativo": True}]}
+        
+        self.assertTrue(verify_local_login(whitelist, "admin", "senha_segura_123"))
+        self.assertFalse(verify_local_login(whitelist, "admin", "senha_errada"))
+
+    def test_telegram_update_parsing(self) -> None:
+        from sinalizacao.server.messenger_bridge import parse_telegram_update
+        update = {
+            "update_id": 99,
+            "message": {
+                "message_id": 101,
+                "from": {"id": 123456789, "first_name": "Ana", "username": "diretora_ana"},
+                "chat": {"id": 123456789},
+                "text": "manda para a tv do saguao"
+            }
+        }
+        event = parse_telegram_update(update)
+        self.assertEqual(event.channel, "telegram")
+        self.assertEqual(event.sender_id, "123456789")
+        self.assertEqual(event.sender_username, "diretora_ana")
+        self.assertEqual(event.text, "manda para a tv do saguao")
+
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -195,7 +195,13 @@ class SignalizacaoService:
         return self.state_store.read({})
 
     def get_screen_state(self, screen: str) -> dict[str, Any]:
-        return self.get_state().get(screen, {"tipo": "vazio", "src": "", "desde": ""})
+        state = self.get_state().get(screen, {"tipo": "vazio", "src": "", "desde": ""})
+        if state.get("tipo") == "playlist":
+            media_list = self.list_media()
+            if media_list:
+                idx = int(datetime.now(timezone.utc).timestamp() // 10) % len(media_list)
+                state = {**state, "src": media_list[idx]}
+        return state
 
     def screen_catalog(self) -> dict[str, Any]:
         if self.screen_map:

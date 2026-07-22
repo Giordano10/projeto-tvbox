@@ -15,89 +15,359 @@ PANEL_HTML = """<!doctype html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Painel TV Box</title>
+    <title>Painel TV Box • Sinalização Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { color-scheme: dark; --bg:#0b1020; --panel:#121a33; --line:#253156; --text:#eef2ff; --muted:#9aa7c7; --accent:#5eead4; --accent2:#60a5fa; --danger:#f87171; }
-        * { box-sizing:border-box; }
-        body { margin:0; font-family: Arial, sans-serif; background: radial-gradient(circle at top, #182544 0, #0b1020 45%, #060913 100%); color:var(--text); }
-        header { padding:28px 20px 14px; max-width:1200px; margin:0 auto; }
-        h1 { margin:0 0 8px; font-size: clamp(24px, 3vw, 40px); }
-        .sub { color:var(--muted); margin:0; }
-        main { max-width:1200px; margin:0 auto; padding:0 20px 32px; display:grid; grid-template-columns: 1.2fr 0.9fr; gap:16px; }
-        .card { background:rgba(18,26,51,.92); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:0 18px 50px rgba(0,0,0,.28); }
-        .grid { display:grid; gap:12px; }
-        label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
-        input, select, textarea, button { width:100%; border-radius:12px; border:1px solid var(--line); background:#0b1226; color:var(--text); padding:12px 14px; font-size:14px; }
-        textarea { min-height:110px; resize:vertical; }
-        button { cursor:pointer; background:linear-gradient(135deg, var(--accent2), var(--accent)); color:#05111a; font-weight:700; border:none; }
-        button.secondary { background:#19213a; color:var(--text); border:1px solid var(--line); }
-        button.danger { background:linear-gradient(135deg, #ef4444, #fb7185); color:#fff; }
-        .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-        .status { margin-top:12px; padding:12px 14px; border-radius:12px; background:#0b1226; border:1px solid var(--line); color:var(--muted); white-space:pre-wrap; }
-        .list { display:grid; gap:10px; }
-        .item { padding:12px 14px; border-radius:12px; background:#0b1226; border:1px solid var(--line); }
-        .item strong { display:block; margin-bottom:4px; }
-        .pill { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(94,234,212,.15); color:var(--accent); font-size:12px; }
-        code { background:#09101f; padding:2px 6px; border-radius:6px; }
-        @media (max-width: 900px) { main { grid-template-columns:1fr; } }
+        :root {
+            --bg: #090d16;
+            --panel: rgba(15, 23, 42, 0.85);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --accent: #14b8a6;
+            --accent-gradient: linear-gradient(135deg, #0d9488, #2563eb);
+            --accent-hover: linear-gradient(135deg, #14b8a6, #3b82f6);
+            --danger: #ef4444;
+            --danger-gradient: linear-gradient(135deg, #dc2626, #b91c1c);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --input-bg: #0f172a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #0f172a 50%, #090d16 100%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        header {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--panel-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-box { display: flex; align-items: center; gap: 12px; }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(13, 148, 136, 0.3);
+        }
+        .logo-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+        .logo-sub { font-size: 12px; color: var(--muted); margin: 0; }
+        
+        .nav-tabs {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+        }
+        .card-title {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+        input, select, textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            color: var(--text);
+            padding: 12px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+        button {
+            width: 100%;
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--accent-gradient);
+            color: #fff;
+            transition: transform 0.1s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        button:hover { opacity: 0.95; }
+        button:active { transform: scale(0.98); }
+        button.secondary { background: rgba(51, 65, 85, 0.8); color: var(--text); border: 1px solid var(--panel-border); }
+        button.danger { background: var(--danger-gradient); }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-online { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+        .badge-offline { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        .device-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .chat-box {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            height: 320px;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .chat-msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .chat-msg.user { background: #2563eb; color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .chat-msg.bot { background: #334155; color: var(--text); align-self: flex-start; border-bottom-left-radius: 2px; }
+        .chat-msg.system { background: rgba(13, 148, 136, 0.2); color: var(--accent); align-self: center; font-size: 12px; border-radius: 20px; }
+
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
+        .media-item {
+            background: #0f172a;
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .media-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .media-item img { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; }
+        .media-item span { display: block; font-size: 11px; color: var(--muted); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .log-list { max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; background: #0f172a; padding: 12px; border-radius: 10px; border: 1px solid var(--panel-border); }
+        .log-entry { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <header>
-        <h1>Painel local de testes</h1>
-        <p class="sub">Use esta tela para autenticar, disparar comandos e conferir o estado das TVs cadastradas na rede local.</p>
-    </header>
-    <main>
-        <section class="card">
-            <div class="grid">
-                <div class="row">
-                    <div>
-                        <label for="user">Usuario</label>
-                        <input id="user" value="diretor" autocomplete="username">
-                    </div>
-                    <div>
-                        <label for="senha">Senha</label>
-                        <input id="senha" type="password" value="trocar123" autocomplete="current-password">
-                    </div>
-                </div>
-                <div class="row">
-                    <button id="btnLogin">Entrar</button>
-                    <button id="btnRefresh" class="secondary">Atualizar estado</button>
-                </div>
+        <div class="header-content">
+            <div class="logo-box">
+                <div class="logo-icon">TV</div>
                 <div>
-                    <label for="tela">Tela</label>
-                    <select id="tela"></select>
+                    <h1 class="logo-title">Gestor PicoClaw TV Box</h1>
+                    <p class="logo-sub">Sinalização Digital Local-First</p>
                 </div>
-                <div>
-                    <label for="midia">Midia da biblioteca</label>
-                    <input id="midia" placeholder="biblioteca/arquivo.png" value="biblioteca/avisos.png">
-                </div>
-                <div class="row">
-                    <button id="btnExibir">Exibir midia</button>
-                    <button id="btnLimpar" class="danger">Limpar tela</button>
-                </div>
-                <div>
-                    <label for="comando">Comando livre</label>
-                    <textarea id="comando" placeholder="coloca o aviso da reuniao na tv_saguao"></textarea>
-                </div>
-                <button id="btnComando" class="secondary">Executar comando textual</button>
             </div>
-            <div class="status" id="status">Aguardando login...</div>
-        </section>
+            <div id="authStatus">
+                <span class="status-badge badge-offline">Desconectado</span>
+            </div>
+        </div>
+        <nav class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('telas')">📺 Controle de Telas</button>
+            <button class="tab-btn" onclick="switchTab('cartazes')">🎨 Gerador de Cartazes</button>
+            <button class="tab-btn" onclick="switchTab('picoclaw')">🤖 Simulador PicoClaw</button>
+            <button class="tab-btn" onclick="switchTab('dispositivos')">📡 Dispositivos & IPs</button>
+            <button class="tab-btn" onclick="switchTab('auditoria')">📋 Auditoria & Permissões</button>
+        </nav>
+    </header>
 
-        <aside class="card">
-            <h2 style="margin-top:0">Telas e dispositivos</h2>
-            <div class="list" id="devices"></div>
-        </aside>
+    <main>
+        <!-- ABA 1: CONTROLE DE TELAS -->
+        <div id="tab-telas" class="tab-content active">
+            <div class="grid-2">
+                <div class="card">
+                    <h3 class="card-title">Login do Operador</h3>
+                    <div style="display: grid; gap: 12px;">
+                        <div class="grid-2">
+                            <div>
+                                <label for="user">Usuário</label>
+                                <input id="user" value="diretor" placeholder="Nome de usuário">
+                            </div>
+                            <div>
+                                <label for="senha">Senha</label>
+                                <input id="senha" type="password" value="trocar123" placeholder="Senha">
+                            </div>
+                        </div>
+                        <button id="btnLogin" onclick="login()">Entrar no Painel</button>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--panel-border); margin: 20px 0;">
+
+                    <h3 class="card-title">Publicar Conteúdo em Tela</h3>
+                    <div style="display: grid; gap: 12px;">
+                        <div>
+                            <label for="selectTela">Selecione a TV de Destino</label>
+                            <select id="selectTela"></select>
+                        </div>
+                        <div>
+                            <label for="inputMidia">Caminho da Mídia</label>
+                            <input id="inputMidia" placeholder="biblioteca/avisos.png" value="biblioteca/avisos.png">
+                        </div>
+                        <div class="grid-2">
+                            <button onclick="exibirMidia()">Exibir Mídia</button>
+                            <button class="danger" onclick="limparTela()">Limpar Tela</button>
+                        </div>
+                        <button class="secondary" onclick="rotacionarTela()">Alternar Playlist/Rotação</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Galeria da Biblioteca</h3>
+                    <div id="mediaGallery" class="media-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: GERADOR DE CARTAZES -->
+        <div id="tab-cartazes" class="tab-content">
+            <div class="card" style="max-width: 650px; margin: 0 auto;">
+                <h3 class="card-title">Gerar Cartaz / Slide em HD</h3>
+                <div style="display: grid; gap: 16px;">
+                    <div>
+                        <label for="slideTela">TV de Destino</label>
+                        <select id="slideTela"></select>
+                    </div>
+                    <div>
+                        <label for="slideTitulo">Título do Cartaz</label>
+                        <input id="slideTitulo" placeholder="Ex: Reunião de Pais e Mestres" value="Aviso Importante">
+                    </div>
+                    <div>
+                        <label for="slideCorpo">Corpo da Mensagem</label>
+                        <textarea id="slideCorpo" placeholder="Escreva o texto do comunicado que aparecerá na TV...">Informamos que haverá reunião geral nesta sexta-feira às 19h no auditório principal.</textarea>
+                    </div>
+                    <button onclick="gerarSlide()">🎨 Gerar e Publicar Cartaz</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: SIMULADOR PICOCLAW -->
+        <div id="tab-picoclaw" class="tab-content">
+            <div class="card" style="max-width: 700px; margin: 0 auto;">
+                <h3 class="card-title">Assistente PicoClaw em Linguagem Natural</h3>
+                <p style="font-size: 13px; color: var(--muted); margin-top: -8px;">Simule comandos enviados por gestores no chat (ex: "coloca o aviso da reuniao na tv_saguao", "autorizar @operador_sala").</p>
+                
+                <div id="chatHistory" class="chat-box">
+                    <div class="chat-msg system">PicoClaw Bridge pronto para comandos de voz ou texto</div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <input id="inputChat" placeholder="Digite uma instrução em linguagem natural..." onkeypress="if(event.key==='Enter') enviarComandoChat()">
+                    <button style="width: auto; padding: 0 24px;" onclick="enviarComandoChat()">Enviar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 4: DISPOSITIVOS & IPS -->
+        <div id="tab-dispositivos" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">Equipamentos Cadastrados e Status de Heartbeat</h3>
+                <div id="devicesList" class="grid-3"></div>
+            </div>
+        </div>
+
+        <!-- ABA 5: AUDITORIA & PERMISSÕES -->
+        <div id="tab-auditoria" class="tab-content">
+            <div class="grid-2">
+                <div class="card">
+                    <h3 class="card-title">Usuários Autorizados no Mensageiro</h3>
+                    <div id="authorizedUsersList"></div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Histórico de Autorizações e Ações</h3>
+                    <div id="auditLog" class="log-list"></div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
-        const statusBox = document.getElementById('status');
-        const devicesBox = document.getElementById('devices');
-        const telaSelect = document.getElementById('tela');
+        let currentConfig = null;
 
-        function setStatus(message) {
-            statusBox.textContent = message;
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
         }
 
         async function requestJson(url, options = {}) {
@@ -114,73 +384,140 @@ PANEL_HTML = """<!doctype html>
         }
 
         async function refresh() {
-            const data = await requestJson('/api/config');
-            const screens = data.screens || [];
-            const devices = data.devices || [];
-            telaSelect.innerHTML = screens.map((screen) => `<option value="${screen}">${screen}</option>`).join('');
-            devicesBox.innerHTML = devices.map((device) => {
-                const state = (data.state || {})[device.screen_id] || {};
-                return `<div class="item"><strong>${device.label || device.screen_id}<span class="pill">${device.screen_id}</span></strong>IP: ${device.ip || '-'}<br>Heartbeat: ${device.last_seen || 'nunca'}<br>Estado: ${state.tipo || 'vazio'}${state.src ? `<br>Src: ${state.src}` : ''}</div>`;
-            }).join('');
-            setStatus(`Logado como ${data.settings ? 'usuario autenticado' : 'visitante'}. ${devices.length} dispositivo(s) carregado(s).`);
+            try {
+                const data = await requestJson('/api/config');
+                currentConfig = data;
+                
+                document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-online">Autenticado</span>';
+                
+                const screens = data.screens || [];
+                const selectTela = document.getElementById('selectTela');
+                const slideTela = document.getElementById('slideTela');
+                
+                selectTela.innerHTML = screens.map(s => `<option value="${s}">${s}</option>`).join('');
+                slideTela.innerHTML = screens.map(s => `<option value="${s}">${s}</option>`).join('');
+
+                // Galeria de mídias
+                const mediaGallery = document.getElementById('mediaGallery');
+                mediaGallery.innerHTML = (data.media || []).map(m => `
+                    <div class="media-item" onclick="document.getElementById('inputMidia').value='${m}'">
+                        <img src="/conteudo/${m}" alt="${m}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'80\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%231e293b\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%2394a3b8\\' text-anchor=\\'middle\\'>Doc</text></svg>'">
+                        <span>${m.replace('biblioteca/', '')}</span>
+                    </div>
+                `).join('');
+
+                // Dispositivos
+                const devicesList = document.getElementById('devicesList');
+                devicesList.innerHTML = (data.devices || []).map(d => {
+                    const state = (data.state || {})[d.screen_id] || {};
+                    const isOnline = d.last_seen_ok;
+                    return `
+                        <div class="device-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <strong>${d.label || d.screen_id}</strong>
+                                <span class="status-badge ${isOnline ? 'badge-online' : 'badge-offline'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                            </div>
+                            <div style="font-size:12px; color:var(--muted); display:grid; gap:4px;">
+                                <div><strong>ID:</strong> ${d.screen_id}</div>
+                                <div><strong>IP Fixo:</strong> ${d.ip || 'Não definido'}</div>
+                                <div><strong>Último Heartbeat:</strong> ${d.last_seen || 'Nenhum'}</div>
+                                <div><strong>Estado Atual:</strong> ${state.tipo || 'vazio'} ${state.src ? `(${state.src})` : ''}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Usuários Autorizados
+                const authUsers = document.getElementById('authorizedUsersList');
+                authUsers.innerHTML = (data.authorized_users || []).map(u => `
+                    <div style="padding:10px; background:#0f172a; border-radius:8px; margin-bottom:8px; font-size:13px;">
+                        <strong>${u.nome || u.user_id}</strong> (${u.role})<br>
+                        <span style="color:var(--muted); font-size:11px;">Canal: ${u.canal} | Lib: ${u.autorizado_em || '-'}</span>
+                    </div>
+                `).join('') || '<div style="color:var(--muted); font-size:13px;">Nenhum usuário cadastrado</div>';
+
+                // Logs de Autorização
+                const logs = await requestJson('/api/autorizacoes').catch(() => ({ historico: [] }));
+                document.getElementById('auditLog').innerHTML = (logs.historico || []).reverse().map(l => `
+                    <div class="log-entry">[${l.timestamp || ''}] ${l.actor || 'sistema'}: ${l.acao || 'evento'} -> ${l.status || 'ok'}</div>
+                `).join('');
+
+            } catch (e) {
+                document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-offline">Não Autenticado</span>';
+            }
         }
 
-        document.getElementById('btnLogin').addEventListener('click', async () => {
+        async function login() {
             try {
-                const payload = { user: document.getElementById('user').value, senha: document.getElementById('senha').value };
-                await requestJson('/api/login', { method: 'POST', body: JSON.stringify(payload) });
-                setStatus('Login efetuado.');
+                const user = document.getElementById('user').value;
+                const senha = document.getElementById('senha').value;
+                await requestJson('/api/login', { method: 'POST', body: JSON.stringify({ user, senha }) });
                 await refresh();
-            } catch (error) {
-                setStatus(`Falha no login: ${error.message}`);
+            } catch (e) {
+                alert('Erro de Login: ' + e.message);
             }
-        });
+        }
 
-        document.getElementById('btnRefresh').addEventListener('click', async () => {
+        async function exibirMidia() {
             try {
+                const tela = document.getElementById('selectTela').value;
+                const midia = document.getElementById('inputMidia').value;
+                await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'exibir', tela, midia }) });
                 await refresh();
-            } catch (error) {
-                setStatus(`Falha ao atualizar: ${error.message}`);
-            }
-        });
+            } catch (e) { alert('Falha ao exibir: ' + e.message); }
+        }
 
-        document.getElementById('btnExibir').addEventListener('click', async () => {
+        async function limparTela() {
             try {
-                const payload = { acao: 'exibir', midia: document.getElementById('midia').value, tela: telaSelect.value };
-                const result = await requestJson('/api/comando', { method: 'POST', body: JSON.stringify(payload) });
-                setStatus(JSON.stringify(result, null, 2));
+                const tela = document.getElementById('selectTela').value;
+                await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'limpar', tela }) });
                 await refresh();
-            } catch (error) {
-                setStatus(`Falha ao exibir: ${error.message}`);
-            }
-        });
+            } catch (e) { alert('Falha ao limpar: ' + e.message); }
+        }
 
-        document.getElementById('btnLimpar').addEventListener('click', async () => {
+        async function rotacionarTela() {
             try {
-                const payload = { acao: 'limpar', tela: telaSelect.value };
-                const result = await requestJson('/api/comando', { method: 'POST', body: JSON.stringify(payload) });
-                setStatus(JSON.stringify(result, null, 2));
+                const tela = document.getElementById('selectTela').value;
+                await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'rotacionar', tela }) });
                 await refresh();
-            } catch (error) {
-                setStatus(`Falha ao limpar: ${error.message}`);
-            }
-        });
+            } catch (e) { alert('Falha ao rotacionar: ' + e.message); }
+        }
 
-        document.getElementById('btnComando').addEventListener('click', async () => {
+        async function gerarSlide() {
             try {
-                const payload = { texto: document.getElementById('comando').value };
-                const result = await requestJson('/api/comando', { method: 'POST', body: JSON.stringify(payload) });
-                setStatus(JSON.stringify(result, null, 2));
+                const tela = document.getElementById('slideTela').value;
+                const titulo = document.getElementById('slideTitulo').value;
+                const corpo = document.getElementById('slideCorpo').value;
+                await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ acao: 'gerar_slide', tela, titulo, corpo }) });
+                alert('Cartaz gerado e publicado!');
                 await refresh();
-            } catch (error) {
-                setStatus(`Falha no comando: ${error.message}`);
-            }
-        });
+            } catch (e) { alert('Falha ao gerar cartaz: ' + e.message); }
+        }
 
-        refresh().catch((error) => setStatus(`Sem sessao ativa: ${error.message}`));
+        async function enviarComandoChat() {
+            const input = document.getElementById('inputChat');
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            const history = document.getElementById('chatHistory');
+            history.innerHTML += `<div class="chat-msg user">${texto}</div>`;
+            input.value = '';
+
+            try {
+                const res = await requestJson('/api/comando', { method: 'POST', body: JSON.stringify({ texto }) });
+                history.innerHTML += `<div class="chat-msg bot">✅ Ação Executada: ${JSON.stringify(res, null, 2)}</div>`;
+                await refresh();
+            } catch (e) {
+                history.innerHTML += `<div class="chat-msg bot" style="background:#451a1a; color:#f87171;">⚠️ Recusado: ${e.message}</div>`;
+            }
+            history.scrollTop = history.scrollHeight;
+        }
+
+        refresh();
     </script>
 </body>
 </html>"""
+
 
 
 VIEWER_HTML = """<!doctype html>
@@ -370,6 +707,12 @@ def create_app() -> Flask:
     @app.post("/api/mensagem")
     @login_required
     def mensagem():
+        payload = request.get_json(force=True, silent=True) or {}
+        result = service.handle_messenger_payload(payload)
+        return jsonify(result), 200 if result.get("status") == "ok" else 400
+
+    @app.post("/api/webhook/telegram")
+    def webhook_telegram():
         payload = request.get_json(force=True, silent=True) or {}
         result = service.handle_messenger_payload(payload)
         return jsonify(result), 200 if result.get("status") == "ok" else 400

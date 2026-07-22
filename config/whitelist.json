@@ -2,7 +2,7 @@
   "painel_local": [
     {
       "user": "diretor",
-      "hash_senha": "plain:trocar123",
+      "hash_senha": "scrypt:32768:8:1$IGS69fHNSuzWnwvE$a6f4e1eef0bbe2404f187943a515cd752c0704a0544294b305a768d4293bbf8111633370fc9eea435d10449dca1635208ad701772057657ccee293aaf5aef93d",
       "role": "gestor",
       "ativo": true
     }
